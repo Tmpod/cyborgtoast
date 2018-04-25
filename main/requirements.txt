@@ -1,1 +1,1 @@
-python-3.6.4
+git+https://github.com/Rapptz/discord.py@rewrite[voice]
