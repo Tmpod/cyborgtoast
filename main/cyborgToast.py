@@ -4,14 +4,15 @@ import discord
 from discord import utils
 from discord.ext import commands
 from discord.utils import get
+import random
 
 
 #Snuggle's Hypixel API Wrapper Setup
-API_KEYS = ['**********']
+API_KEYS = ['***********************']
 hypixel.setKeys(API_KEYS)
 
 #Bot inicialization
-TOKEN = '*************'
+TOKEN = '*****************************************'
 prefix = "-" #I define the prefix before hand so that I can use it later in the help command
 bot = commands.Bot(description="This bot detects your Hypixel rank and assigns a corresponding role", command_prefix=prefix)
 
@@ -28,7 +29,13 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print('==================')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for {}help".format(prefix))) #'Watching for -help!' message
+    watch = discord.Activity(type=discord.ActivityType.watching, name=f"for {prefix}help")
+    stream = discord.Activity(type=discord.ActivityType.streaming, name="bits of information")
+    game = random.choice(['Minesweeper', 'Pong', 'with the Hypixel API', 'with the Discord API', 'Tic-tac Toe'])
+    play = discord.Activity(type=discord.ActivityType.playing, name=game)
+    possb = [watch, stream, play]
+    act = random.choice(possb)
+    await bot.change_presence(activity=act) #'Watching for -help!' message
 #########################
 
 #Custom help command
@@ -36,13 +43,13 @@ async def on_ready():
 async def help(ctx):
     if ctx.invoked_subcommand is None:
         a = ctx.message.author
-        emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description="Here is the normal-user available command list. The prefix for this bot is currently `{0}` . You have to **always** put it right before the key command words without any spaces. _Example:_ `{0}help w`".format(prefix))
+        emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here is the normal-user available command list. The prefix for this bot is currently `{prefix}` . You have to **always** put it right before the key command words without any spaces. _Example:_ `{prefix}help w`")
         emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
         emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
-        # emb.add_field(name="*rankinfo <IGN>*", value="This command tells you what Hypixel rank the player you typed in has. You may also use `rinfo` or `ri` instead of the default command.")
-        # emb.add_field(name="*getrank <IGN>*", value="This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided as your Discord account linked. You may also use `gr` instead of the default command.")
-        emb.add_field(name="*hypixel <subcommand>*", value="This category contains some Hypixel related commands. Do `{}help hypixel` to check all the Hypixel related commands! You may also use `hy` instead of the default command.".format(prefix))
-        emb.add_field(name="*party <subcommand>*", value="This category contains the party management commands. Do `{}help party` to check all the Hypixel related commands! You may also use `p` instead of the default command.".format(prefix))
+        emb.add_field(name="*rankinfo <IGN>*", value="This command tells you what Hypixel rank the player you typed in has. You may also use `rinfo` or `ri` instead of the default command.")
+        emb.add_field(name="*getrank <IGN>*", value="This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided as your Discord account linked. You may also use `gr` instead of the default command.")
+        emb.add_field(name="*hypixel <subcommand>*", value=f"This category contains some Hypixel related commands. Do `{prefix}help hypixel` to check all the Hypixel related commands! You may also use `hy` instead of the default command.")
+        emb.add_field(name="*party <subcommand>*", value=f"This category contains the party management commands. Do `{prefix}help party` to check all the Hypixel related commands! You may also use `p` instead of the default command.")
         emb.add_field(name="*shrug*", value="Sends a shrug. Why having this? ¯\\_(ツ)_/¯")
         emb.add_field(name="*help*", value="Shows this message. You can use `help w` to get this message in a DM to you! You may also use `h` instead of the default command")
         await ctx.send(embed=emb)
@@ -52,10 +59,10 @@ async def help(ctx):
 @help.command(aliases=['w', 'dm', 'priv', 'private'])
 async def whisper(ctx):
     a = ctx.message.author
-    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description="Here is the normal-user available command list. The prefix for this bot is currently `{0}` . You have to **always** put it right before the key command words without any spaces. _Example:_ `{0}help w`".format(prefix))
+    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here is the normal-user available command list. The prefix for this bot is currently `{prefix}` . You have to **always** put it right before the key command words without any spaces. _Example:_ `{prefix}help w`")
     emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
     emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
-    emb.add_field(name="*hypixel <subcommand>*", value="This category contains some Hypixel related commands. Do `{}help hypixel` to check all the Hypixel related commands! You may also use `hy` instead of the default command.".format(prefix))
+    emb.add_field(name="*hypixel <subcommand>*", value=f"This category contains some Hypixel related commands. Do `{prefix}help hypixel` to check all the Hypixel related commands! You may also use `hy` instead of the default command.")
     emb.add_field(name="*shrug*", value="Sends a shrug. Why having this? ¯\\_(ツ)_/¯")
     emb.add_field(name="*help*", value="Shows this message. You can use `help w` to get this message in a DM to you! You may also use `h` instead of the default command")
     await ctx.author.send(embed=emb)
@@ -67,7 +74,7 @@ async def whisper(ctx):
 async def hypixel(ctx, whisper=None):
     a = ctx.message.author
     sWhisper = str(whisper)
-    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description="Here are the Hypixel related commands. These are subcommands from the main `{0}hypixel` command (which can also be `{0}hy`). Here's an example of how to use these commands: `{0}hypixel rankinfo BonjourCroquette`. Don't forget to use `{0}` before your commands!".format(prefix))
+    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here are the Hypixel related commands. These are subcommands from the main `{prefix}hypixel` command (which can also be `{prefix}hy`). Here's an example of how to use these commands: `{prefix}hypixel rankinfo BonjourCroquette`. Don't forget to use `{prefix}` before your commands!")
     emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
     emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
     emb.add_field(name="*rankinfo <IGN>*", value="This command tells you what Hypixel rank the player you typed in has. You may also use `rinfo` or `ri` instead of the default command.")
@@ -84,7 +91,7 @@ async def hypixel(ctx, whisper=None):
 async def party(ctx, whisper=None):
     a = ctx.message.author
     sWhisper = str(whisper)
-    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description="Here are the Hypixel related commands. These are subcommands from the main `{0}hypixel` command (which can also be `{0}hy`). Here's an example of how to use these commands: `{0}hypixel rankinfo BonjourCroquette`. Don't forget to use `{0}` before your commands!".format(prefix))
+    emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here are the Hypixel related commands. These are subcommands from the main `{prefix}hypixel` command (which can also be `{prefix}hy`). Here's an example of how to use these commands: `{prefix}hypixel rankinfo BonjourCroquette`. Don't forget to use `{prefix}` before your commands!")
     emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
     emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
     emb.add_field(name="*create <party name>*", value="Create a party with the given name.")
@@ -99,18 +106,18 @@ async def party(ctx, whisper=None):
 
 
 #Groups
-@bot.group(aliases=['hp', 'hy', 'hyp', 'hypixel'])
+@bot.group(aliases=['hy', 'hypixel'])
 async def hypixelcmd(ctx=None):
     if ctx.invoked_subcommand is None:
         a = ctx.message.author
-        await ctx.send("You haven't specified which command to execute! Try `{}help` to see which commands are available. ".format(prefix) + a.mention)
+        await ctx.send(f"You haven't specified which command to execute! Try `{prefix}help` to see which commands are available. " + a.mention)
 
 
 @bot.group(aliases=['p'])
 async def party(ctx=None):
     if ctx.invoked_subcommand is None:
         a = ctx.message.author
-        await ctx.send("You haven't specified which command to execute! Try `{}help` to see which commands are available. ".format(prefix) + a.mention)
+        await ctx.send(f"You haven't specified which command to execute! Try `{prefix}help` to see which commands are available. " + a.mention)
 
 
 
@@ -149,7 +156,7 @@ async def getrank(ctx, *, something=None):
                 else:
                     await ctx.send(a.mention + "You are not the owner of that account or you haven't linked your Discord account to your Hypixel profile. To do so use `!hypixelverify`!")
             except KeyError:
-                await ctx.send("This user doesn't have a Discord account linked. Use `{}hypixel link` and follow the steps given!".format(prefix))
+                await ctx.send(f"This user doesn't have a Discord account linked. Use `{prefix}hypixel link` and follow the steps given!")
         except hypixel.PlayerNotFoundException:
             await ctx.send("Player not found!")
     await ctx.message.delete()
@@ -213,7 +220,7 @@ async def getbedwarslevel(ctx, something=None):
         try:
             player = hypixel.Player(something)
             bwLvl = int(player.getBWLvL())
-            success = "Bedwars level {} successfuly assigned! ".format(bwLvl) + a.mention
+            success = f"Bedwars level {prefix} successfuly assigned! " + a.mention
             try:
                 socialMedias = player.JSON['socialMedia']['links']
                 if str(socialMedias['DISCORD']) == str(ctx.message.author):
@@ -249,7 +256,7 @@ async def getbedwarslevel(ctx, something=None):
                 else:
                     await ctx.send(a.mention + "You are not the owner of that account or you haven't linked your Discord account to your Hypixel profile. To do so use `!hypixelverify`!")
             except KeyError:
-                await ctx.send("This user doesn't have a Discord account linked. Use `{}hypixel link` and follow the steps given!".format(prefix))
+                await ctx.send(f"This user doesn't have a Discord account linked. Use `{prefix}hypixel link` and follow the steps given!")
         except hypixel.PlayerNotFoundException:
             await ctx.send("Player not found!")
     await ctx.message.delete()
