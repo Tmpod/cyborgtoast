@@ -16,7 +16,7 @@ hypixel.setKeys(API_KEYS)
 #Bot inicialization
 TOKEN = '****************'
 prefix = "-" #I define the prefix before hand so that I can use it anywhere else easily.
-bot = commands.Bot(description="This bot detects your Hypixel rank and assigns a corresponding role", command_prefix=prefix)
+bot = commands.Bot(description="This is party manager bot and it has some Hypixel related commands. [InDev]", command_prefix=prefix)
 
 
 #Removing the default help command
