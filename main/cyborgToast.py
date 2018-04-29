@@ -9,12 +9,12 @@ import asyncio
 
 
 #Snuggle's Hypixel API Wrapper Setup
-API_KEYS = ['8bffd101-c891-4c18-8eec-9283c7e95a23']
+API_KEYS = ['**************']
 hypixel.setKeys(API_KEYS)
 
 
 #Bot inicialization
-TOKEN = 'NDM2NjE3ODE3MDQzNzYzMjAw.DbqIDw.5uaoqimdpwKJz6N6rNfeTdo_U68'
+TOKEN = '****************'
 prefix = "-" #I define the prefix before hand so that I can use it anywhere else easily.
 bot = commands.Bot(description="This bot detects your Hypixel rank and assigns a corresponding role", command_prefix=prefix)
 
