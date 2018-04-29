@@ -5,22 +5,25 @@ from discord import utils
 from discord.ext import commands
 from discord.utils import get
 import random
+import asyncio
 
 
 #Snuggle's Hypixel API Wrapper Setup
-API_KEYS = ['***********************']
+API_KEYS = ['8bffd101-c891-4c18-8eec-9283c7e95a23']
 hypixel.setKeys(API_KEYS)
 
+
 #Bot inicialization
-TOKEN = '*****************************************'
-prefix = "-" #I define the prefix before hand so that I can use it later in the help command
+TOKEN = 'NDM2NjE3ODE3MDQzNzYzMjAw.DbqIDw.5uaoqimdpwKJz6N6rNfeTdo_U68'
+prefix = "-" #I define the prefix before hand so that I can use it anywhere else easily.
 bot = commands.Bot(description="This bot detects your Hypixel rank and assigns a corresponding role", command_prefix=prefix)
+
 
 #Removing the default help command
 bot.remove_command('help')
 
-#Boot-up success message
-#########################
+
+#Boot-up
 @bot.event
 async def on_ready():
     print('==================')
@@ -29,14 +32,21 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print('==================')
-    watch = discord.Activity(type=discord.ActivityType.watching, name=f"for {prefix}help")
-    stream = discord.Activity(type=discord.ActivityType.streaming, name="bits of information")
-    game = random.choice(['Minesweeper', 'Pong', 'with the Hypixel API', 'with the Discord API', 'Tic-tac Toe'])
-    play = discord.Activity(type=discord.ActivityType.playing, name=game)
-    possb = [watch, stream, play]
-    act = random.choice(possb)
-    await bot.change_presence(activity=act) #'Watching for -help!' message
-#########################
+    async def change_activities():
+        options = ('Minesweeper', 'Pong', 'Tic-tac toe')
+        timeout = 60
+        watch = discord.Activity(type=discord.ActivityType.watching, name=f"for {prefix}help")
+        stream = discord.Streaming(url="https://www.twitch.tv/tmpod", name="bits of information")
+        listen = discord.Activity(type=discord.ActivityType.listening, name="to beeps and boops")
+        while True:
+            game = discord.Game(name=random.choice(options))
+            possb = random.choice([watch, stream, game, listen])
+            await bot.change_presence(activity=possb)
+            await asyncio.sleep(timeout)
+
+    # To fire up the worker in the background:
+    bot.loop.create_task(change_activities())
+
 
 #Custom help command
 @bot.group(aliases=['h'])
@@ -46,8 +56,6 @@ async def help(ctx):
         emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here is the normal-user available command list. The prefix for this bot is currently `{prefix}` . You have to **always** put it right before the key command words without any spaces. _Example:_ `{prefix}help w`")
         emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
         emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
-        emb.add_field(name="*rankinfo <IGN>*", value="This command tells you what Hypixel rank the player you typed in has. You may also use `rinfo` or `ri` instead of the default command.")
-        emb.add_field(name="*getrank <IGN>*", value="This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided as your Discord account linked. You may also use `gr` instead of the default command.")
         emb.add_field(name="*hypixel <subcommand>*", value=f"This category contains some Hypixel related commands. Do `{prefix}help hypixel` to check all the Hypixel related commands! You may also use `hy` instead of the default command.")
         emb.add_field(name="*party <subcommand>*", value=f"This category contains the party management commands. Do `{prefix}help party` to check all the Hypixel related commands! You may also use `p` instead of the default command.")
         emb.add_field(name="*shrug*", value="Sends a shrug. Why having this? ¯\\_(ツ)_/¯")
@@ -69,16 +77,15 @@ async def whisper(ctx):
     await ctx.message.delete()
 
 
-
-@help.command(aliases=['hy'])
-async def hypixel(ctx, whisper=None):
+@help.command(aliases=['hy', 'hypixel'])
+async def hypixelhelp(ctx, whisper=None):
     a = ctx.message.author
     sWhisper = str(whisper)
     emb = discord.Embed(title="__**CyborgToast Help**__", colour=discord.Colour(11756839), description=f"Here are the Hypixel related commands. These are subcommands from the main `{prefix}hypixel` command (which can also be `{prefix}hy`). Here's an example of how to use these commands: `{prefix}hypixel rankinfo BonjourCroquette`. Don't forget to use `{prefix}` before your commands!")
     emb.set_thumbnail(url="https://discordemoji.com/assets/emoji/ThinkingInverted.png")
     emb.set_footer(text="CyborgToast Bot help page | For more info DM me at Tmpod#0836", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
     emb.add_field(name="*rankinfo <IGN>*", value="This command tells you what Hypixel rank the player you typed in has. You may also use `rinfo` or `ri` instead of the default command.")
-    emb.add_field(name="*getrank <IGN>*", value="This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided as your Discord account linked. You may also use `gr` instead of the default command.")
+    emb.add_field(name="*getrank <IGN>*", value="This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided has your Discord account linked. You may also use `gr` instead of the default command.")
     emb.add_field(name="*link*", value="This will teach you how to link a Discord account to a Hypixel profile!")
     if sWhisper == "w" or sWhisper == "dm" or sWhisper == "priv" or sWhisper == "private":
         await ctx.author.send(embed=emb)
@@ -104,7 +111,6 @@ async def party(ctx, whisper=None):
     await ctx.message.delete()
 
 
-
 #Groups
 @bot.group(aliases=['hy', 'hypixel'])
 async def hypixelcmd(ctx=None):
@@ -120,11 +126,10 @@ async def party(ctx=None):
         await ctx.send(f"You haven't specified which command to execute! Try `{prefix}help` to see which commands are available. " + a.mention)
 
 
-
 #The actual commands
 @hypixelcmd.command(aliases=['gr'])
 async def getrank(ctx, *, something=None):
-    """This commad checks if you have have a Discord account linked with your Hypixel profile and if so it tells you the username and tag linked to it as well as your Hypixel rank."""
+    """This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided has your Discord account linked."""
     a = ctx.message.author
     if something is None:
         await ctx.send("You haven't provided any name! " + a.mention)
@@ -132,7 +137,7 @@ async def getrank(ctx, *, something=None):
         try:
             player = hypixel.Player(something)
             pRank = str(player.getRank()['rank'])
-            success = "{} rank successfuly assigned!".format(pRank)
+            success = f"{pRank} rank successfuly assigned! " + a.mention
             try:
                 socialMedias = player.JSON['socialMedia']['links']
                 if str(socialMedias['DISCORD']) == str(ctx.message.author):
@@ -211,8 +216,9 @@ async def rankinfo(ctx, something=None):
     await ctx.message.delete()
 
 
-@hypixelcmd.command(aliases=['getbwlevel', 'getbwlvl', 'gbwl'])
+@hypixelcmd.command(aliases=['getbwlevel', 'getbwlvl', 'gbwl', 'bw'])
 async def getbedwarslevel(ctx, something=None):
+    """This command will assign the Bedwars level as a role on this Discord server, if the Hypixel profile name you provided has your Discord account linked. """
     a = ctx.message.author
     if something is None:
         await ctx.send("You haven't provided any name! " + a.mention)
@@ -286,14 +292,14 @@ async def shrug(ctx):
 
 
 @party.command()
-async def add(ctx, *, smth=None):
-    illum = utils.get(ctx.guild.roles, id=437701360151035915)
+async def create(ctx, *, smth=None):
     guild = ctx.guild
+    # illum = utils.get(ctx.guild.roles, id=437701360151035915)
     if smth is None:
         overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True),
-        illum: discord.PermissionOverwrite(read_messages=True)
+        # illum: discord.PermissionOverwrite(read_messages=True)
     }
         cat = await guild.create_category_channel(ctx.message.author, overwrites = overwrites)
     else:
@@ -321,3 +327,4 @@ async def add(ctx, *, smth=None):
 
 #Execution
 bot.run(TOKEN)
+
