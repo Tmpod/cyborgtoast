@@ -1,264 +1,183 @@
-""" Simple Hypixel-API in Python, by Snuggle | 2017-09-30 to 2017-10-28 """
-__version__ = '0.7.6'
-# pylint: disable=C0103
-# TODO: Add more comments. Explain what's happening!
-# TODO: Add API-usage stat-tracking. Like a counter of the number of requests and how many per minute etc.
+#!/usr/bin/env python3.6
+# -*- coding: utf-8 -*-
+import discord
+from discord.ext import commands
+import hypixelapi as hype
+import json
 
-from random import choice
-from time import time
-import grequests
-
-import leveling
-
-HYPIXEL_API_URL = 'https://api.hypixel.net/'
-UUIDResolverAPI = "https://sessionserver.mojang.com/session/minecraft/profile/"
-
-HYPIXEL_API_KEY_LENGTH = 36 # This is the length of a Hypixel-API key. Don't change from 36.
-verified_api_keys = []
-
-requestCache = {}
-cacheTime = 60
-
-class PlayerNotFoundException(Exception):
-    """ Simple exception if a player/UUID is not found. This exception can usually be ignored.
-        You can catch this exception with ``except hypixel.PlayerNotFoundException:`` """
-    pass
-
-class GuildIDNotValid(Exception):
-    """ Simple exception if a Guild is not found using a GuildID. This exception can usually be ignored.
-        You can catch this exception with ``except hypixel.GuildIDNotValid:`` """
-    pass
-
-class HypixelAPIError(Exception):
-    """ Simple exception if something's gone very wrong and the program can't continue. """
-    pass
-
-def getJSON(typeOfRequest, **kwargs):
-    """ This private function is used for getting JSON from Hypixel's Public API. """
-    requestEnd = ''
-    if typeOfRequest == 'key':
-        api_key = kwargs['key']
-    else:
-        api_key = choice(verified_api_keys) # Select a random API key from the list available.
-
-        if typeOfRequest == 'player':
-            UUIDType = 'uuid'
-            uuid = kwargs['uuid']
-            if len(uuid) <= 16:
-                UUIDType = 'name' # TODO: I could probably clean this up somehow.
-
-        for name, value in kwargs.items():
-            if typeOfRequest == "player" and name == "uuid":
-                name = UUIDType
-            requestEnd += '&{}={}'.format(name, value)
-
-    cacheURL = HYPIXEL_API_URL + '{}?key={}{}'.format(typeOfRequest, "None", requestEnd) # TODO: Lowercase
-    allURLS = [HYPIXEL_API_URL + '{}?key={}{}'.format(typeOfRequest, api_key, requestEnd)] # Create request URL.
-
-    # If url exists in request cache, and time hasn't expired...
-    if cacheURL in requestCache and requestCache[cacheURL]['cacheTime'] > time():
-        response = requestCache[cacheURL]['data'] # TODO: Extend cache time
-    else:
-        requests = (grequests.get(u) for u in allURLS)
-        responses = grequests.imap(requests)
-        for r in responses:
-            response = r.json()
-
-        if response['success'] is False:
-            raise HypixelAPIError(response)
-        if typeOfRequest == 'player':
-            if response['player'] is None:
-                raise PlayerNotFoundException(uuid)
-        if typeOfRequest != 'key': # Don't cache key requests.
-            requestCache[cacheURL] = {}
-            requestCache[cacheURL]['data'] = response
-            requestCache[cacheURL]['cacheTime'] = time() + cacheTime # Cache request and clean current cache.
-            cleanCache()
-    try:
-        return response[typeOfRequest]
-    except KeyError:
-        return response
-
-def cleanCache():
-    """ This function is occasionally called to clean the cache of any expired objects. """
-    itemsToRemove = []
-    for item in requestCache:
-        try:
-            if requestCache[item]['cacheTime'] < time():
-                itemsToRemove.append(item)
-        except:
-            pass
-    for item in itemsToRemove:
-        requestCache.pop(item)
+with open('CYBORGBASEDATA.json') as json_data:
+    basedata = json.load(json_data)
+    prefix = basedata['prefix']
+#     hypixelKey = str(basedata['hypixelKey'])
+# hype.setKeys(hypixelKey)
 
 
-def setCacheTime(seconds):
-    """ This function sets how long the request cache should last, in seconds.
+class hypixel:
+    def __init__(self, bot):
+        self.bot = bot
 
-        Parameters
-        -----------
-        seconds : float
-            How long you would like Hypixel-API requests to be cached for.
-    """
-    try:
-        global cacheTime
-        cacheTime = float(seconds)
-        return "Cache time has been successfully set to {} seconds.".format(cacheTime)
-    except ValueError as chainedException:
-        raise HypixelAPIError("Invalid cache time \"{}\"".format(seconds)) from chainedException
+    @commands.group(aliases=['hy', 'hypixel'])
+    async def hypixelcmd(self, ctx):
+        """Hypixel related commands"""
+        if ctx.invoked_subcommand is None:
+            a = ctx.message.author
+            await ctx.send(f":octagonal_sign: You haven't specified which command to execute! Try `{prefix}help` to see which commands are available. " + a.mention)   
 
-def setKeys(api_keys):
-    """ This function is used to set your Hypixel API keys.
-        It also checks that they are valid/working.
 
-        Raises
-        ------
-        HypixelAPIError
-            If any of the keys are invalid or don't work, this will be raised.
-
-        Parameters
-        -----------
-        api_keys : list
-            A list of the API keys that you would like to use.
-
-            Example: ``['740b8cf8-8aba-f2ed-f7b10119d28']``.
-    """
-    for api_key in api_keys:
-        if len(api_key) == HYPIXEL_API_KEY_LENGTH:
-            response = getJSON('key', key=api_key)
-            if response['success'] is True:
-                verified_api_keys.append(api_key)
-            else:
-                raise HypixelAPIError("hypixel/setKeys: Error with key XXXXXXXX-XXXX-XXXX-XXXX{} | {}".format(api_key[23:], response))
+    @hypixelcmd.command(aliases=['gr'])
+    async def getrank(self, ctx, *, something=None):
+        """This command will assign the Hypixel rank as a role on this Discord server, if the Hypixel profile name you provided has your Discord account linked."""
+        a = ctx.message.author
+        if something is None:
+            await ctx.send(":octagonal_sign: You haven't provided any name! " + a.mention)
         else:
-            raise HypixelAPIError("hypixel/setKeys: The key '{}' is not 36 characters.".format(api_key))
-
-class Player:
-    """ This class represents a player on Hypixel as a single object.
-        A player has a UUID, a username, statistics etc.
-
-        Raises
-        ------
-        PlayerNotFoundException
-            If the player cannot be found, this will be raised.
-
-        Parameters
-        -----------
-        Username/UUID : string
-            Either the UUID or the username (Depreciated) for a Minecraft player.
-
-        Attributes
-        -----------
-        JSON : string
-            The raw JSON receieved from the Hypixel API.
-
-        UUID : string
-            The player's UUID.
-    """
-
-    JSON = None
-    UUID = None
-
-    def __init__(self, UUID):
-        """ This is called whenever someone uses hypixel.Player('Snuggle').
-            Get player's UUID, if it's a username. Get Hypixel-API data. """
-        self.UUID = UUID
-        if len(UUID) <= 16: # If the UUID isn't actually a UUID... *rolls eyes* Lazy people.
-            self.JSON = getJSON('player', uuid=UUID) # Get player's Hypixel-API JSON information.
-            JSON = self.JSON
-            self.UUID = JSON['uuid'] # Pretend that nothing happened and get the UUID from the API.
-        elif len(UUID) == 32 or len(UUID) == 36: # If it's actually a UUID, with/without hyphens...
-            self.JSON = getJSON('player', uuid=UUID)
-        else:
-            raise PlayerNotFoundException(UUID)
-
-
-    def getPlayerInfo(self):
-        """ This is a simple function to return a bunch of common data about a player. """
-        JSON = self.JSON
-        playerInfo = {}
-        playerInfo['uuid'] = self.UUID
-        playerInfo['displayName'] = Player.getName(self)
-        playerInfo['rank'] = Player.getRank(self)
-        playerInfo['networkLevel'] = Player.getLevel(self)
-        JSONKeys = ['karma', 'firstLogin', 'lastLogin',
-                    'mcVersionRp', 'networkExp', 'socialMedia', 'prefix']
-        for item in JSONKeys:
             try:
-                playerInfo[item] = JSON[item]
-            except KeyError:
-                pass
-        return playerInfo
+                player = hype.Player(something)
+                pRank = str(player.getRank()['rank'])
+                success = f":white_check_mark: {pRank} rank successfuly assigned! " + a.mention
+                try:
+                    socialMedias = player.JSON['socialMedia']['links']
+                    if str(socialMedias['DISCORD']) == str(ctx.message.author):
+                        if pRank == "MVP++":
+                            await ctx.author.add_roles(get(a.guild.roles, name="MVP++"))
+                            await ctx.send(success)
+                        elif pRank == "MVP+":
+                            await ctx.author.add_roles(get(a.guild.roles, name="MVP+"))
+                            await ctx.send(success)
+                        elif pRank == "MVP":
+                            await ctx.author.add_roles(get(a.guild.roles, name="MVP"))
+                            await ctx.send(success)
+                        elif pRank == "VIP+":
+                            await ctx.author.add_roles(get(a.guild.roles, name="VIP+"))
+                            await ctx.send(success)
+                        elif pRank == "VIP":
+                            await ctx.author.add_roles(get(a.guild.roles, name="VIP"))
+                            await ctx.send(success)
+                        else:
+                            await ctx.send(":octagonal_sign: You don't have a rank on the Hypixel Network." + a.mention)
+                    else:
+                        await ctx.send(f":octagonal_sign: You are not the owner of that account or you haven't linked your Discord account to your Hypixel profile. To do so use `{prefix}link`!" + a.mention)
+                except KeyError:
+                    await ctx.send(f":octagonal_sign: This user doesn't have a Discord account linked. Use `{prefix}hypixel link` and follow the steps given!")
+            except hype.PlayerNotFoundException:
+                await ctx.send(":octagonal_sign: Player not found!")
 
-    def getName(self):
-        """ Just return player's name. """
-        JSON = self.JSON
-        return JSON['displayname']
 
-    def getBWExp(self):
-        JSON = self.JSON
-        return JSON['stats']['Bedwars']['Experience']
-
-    def getBWLvL(self):
-        exp = self.getBWExp()
-        lvl = leveling.getBedWarsLvl(exp)
-        return lvl
-
-    def getLevel(self):
-        """ This function calls leveling.py to calculate a player's network level. """
-        JSON = self.JSON
-        try:
-            networkExp = JSON['networkExp']
-        except KeyError:
-            networkExp = 0
-        try:
-            networkLevel = JSON['networkLevel']
-        except KeyError:
-            networkLevel = 0
-        exp = leveling.getExperience(networkExp, networkLevel)
-        myoutput = leveling.getExactLevel(exp)
-        return myoutput
-
-    def getRank(self):
-        """ This function returns a player's rank, from their data. """
-        JSON = self.JSON
-        playerRank = {} # Creating dictionary.
-        playerRank['wasStaff'] = False
-        possibleRankLocations = ['packageRank', 'newPackageRank', 'monthlyPackageRank', 'rank']
-        # May need to add support for multiple monthlyPackageRank's in future.
-
-        for Location in possibleRankLocations:
-            if Location in JSON:
-                if Location == 'rank' and JSON[Location] == 'NORMAL':
-                    playerRank['wasStaff'] = True
+    @hypixelcmd.command(aliases=['ri', 'rinfo'])
+    async def rankinfo(self, ctx, something=None):
+        """This commad tells you what Hypixel rank the player you typed in has."""
+        a = ctx.message.author
+        if something is None:
+            await ctx.send(":octagonal_sign: You haven't provided any name! " + a.mention)
+        else:    
+            try:
+                await ctx.trigger_typing()
+                player = hype.Player(something)
+                pRank = str(player.getRank()['rank'])
+                pName = str(player.getName())
+                if pRank == "MVP++":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.dark_gold())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/415126611239895050/415128299862491139/rank-mvpplusplus.png")
+                elif pName == "hypixel":
+                    emR = discord.Embed(description = "Owner" ,colour=discord.Colour.dark_red())    
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/435450006749708288/serveimage.jpeg")
+                elif pRank == "MVP+":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.teal())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/415126611239895050/415127788866240522/b7d8e5a027280c3bb378859d02dbe582cdb9c743.png")
+                elif pRank == "MVP":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.teal())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/415126611239895050/415127446514302976/a0be666f173157b0c42cba984cbb97239485a382.png")
+                elif pRank == "VIP+":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.green())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/415126611239895050/415126912034275328/ec6e32c36cd8881bac4df63b17ba1ebd88f94819.png")
+                elif pRank == "VIP":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.green())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/415126611239895050/415126625416380416/e6d6709c969b73397cd84cf77c96fa3619284d85.png")
+                elif pRank == "Admin":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.red())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/435450006749708288/serveimage.jpeg")
+                elif pRank == "Moderator":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.green())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/435450006749708288/serveimage.jpeg")
+                elif pRank == "Helper":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.blue())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/435450006749708288/serveimage.jpeg")
+                elif pRank == "YouTube":
+                    emR = discord.Embed(description = player.getRank()['rank'],colour=discord.Colour.red())
+                    emR.set_author(name=pName + " Hypixel Rank:", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/435446947680223232/youtube_social_icon_white.png")
                 else:
-                    if JSON[Location].lower() == "none": # If monthlyPackageRank expired, ignore "NONE". See: https://github.com/Snuggle/hypixel.py/issues/9
-                        continue
-                    dirtyRank = JSON[Location].title()
-                    dirtyRank = dirtyRank.replace("_", " ").replace("Mvp", "MVP").replace("Vip", "VIP").replace("Superstar", "MVP++") # pylint: disable=line-too-long
-                    playerRank['rank'] = dirtyRank.replace(" Plus", "+").replace("Youtuber", "YouTube")
-
-        if 'rank' not in playerRank:
-            playerRank['rank'] = 'None'
-
-        return playerRank
-
-    def getGuildID(self):
-        """ This function is used to get a GuildID from a player. """
-        UUID = self.UUID
-        GuildID = getJSON('findGuild', byUuid=UUID)
-        return GuildID['guild']
-
-    def getSession(self):
-        """ This function is used to get a player's session information. """
-        UUID = self.UUID
-        try:
-            session = getJSON('session', uuid=UUID)
-        except HypixelAPIError:
-            session = None
-        return session
+                    emR = discord.Embed(title=pName + " Hypixel Rank:", description = player.getRank()['rank'],colour=discord.Colour.light_grey())
+                await ctx.send(embed=emR)            
+            except hype.PlayerNotFoundException:
+                await ctx.send(":octagonal_sign: Player not found!")
 
 
-if __name__ == "__main__":
-    print("This is a Python library and shouldn't be run directly.\n"
-          "Please look at https://github.com/Snuggle/hypixel.py for usage & installation information.")
+    @hypixelcmd.command(aliases=['getbwlevel', 'getbwlvl', 'gbwl', 'bw'])
+    async def getbedwarslevel(self, ctx, something=None):
+        """This command will assign the Bedwars level as a role on this Discord server, if the Hypixel profile name you provided has your Discord account linked. """
+        a = ctx.message.author
+        if something is None:
+            await ctx.send(":octagonal_sign: You haven't provided any name! " + a.mention)
+        else:
+            try:
+                player = hype.Player(something)
+                bwLvl = int(player.getBWLvL())
+                success = f":white_check_mark: Bedwars level {prefix} successfuly assigned! " + a.mention
+                try:
+                    socialMedias = player.JSON['socialMedia']['links']
+                    if str(socialMedias['DISCORD']) == str(ctx.message.author):
+                        if 40 > bwLvl >= 30 :
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 30⭐"))
+                            await ctx.send(success)
+                        elif 50 > bwLvl >= 40:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 40⭐"))
+                            await ctx.send(success)
+                        elif 60 > bwLvl >= 50:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 50⭐"))
+                            await ctx.send(success)
+                        elif 70 > bwLvl >= 60:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 60⭐"))
+                            await ctx.send(success)
+                        elif 80 > bwLvl >= 70:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 70⭐"))
+                            await ctx.send(success)
+                        elif 90 > bwLvl >= 80:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 80⭐"))
+                            await ctx.send(success)
+                        elif 100 > bwLvl >=90:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 90⭐"))
+                            await ctx.send(success)
+                        elif 200 > bwLvl >=100:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 100⭐"))
+                            await ctx.send(success)
+                        elif bwLvl >= 200:
+                            await ctx.author.add_roles(get(a.guild.roles, name="BW 200⭐"))
+                            await ctx.send(success)                                                                                                                        
+                        else:
+                            await ctx.send(":octagonal_sign: You don't have enough stars... How did you even get here? :thinking:" + a.mention)
+                    else:
+                        await ctx.send(f":octagonal_sign: You are not the owner of that account or you haven't linked your Discord account to your Hypixel profile. To do so use `{prefix}link!" + a.mention)
+                except KeyError:
+                    await ctx.send(f":octagonal_sign: This user doesn't have a Discord account linked. Use `{prefix}hypixel link` and follow the steps given!")
+            except hype.PlayerNotFoundException:
+                await ctx.send(":octagonal_sign: Player not found!")
+
+
+    @hypixelcmd.command()
+    async def link(self, ctx):
+        """This will teach you how to link a Discord account to a Hypixel profile!"""
+        em = discord.Embed(title="__**How to link your Discord account with your Hypixel profile**__", description="This will teach you how to link your Discord account with your Hypixel profile so that you can use some commands provided by me :smile:", url="https://www.wikihow.com/Link-a-Discord-Account-with-a-Hypixel-Profile", colour=discord.Colour(2895667))
+        em.set_thumbnail(url="https://cdn.discordapp.com/attachments/421358461473783819/435450006749708288/serveimage.jpeg")
+        em.set_footer(text="How to link Discord with Hypixel page | For more info click the Hypixel icon.", icon_url="https://cdn.discordapp.com/attachments/421358461473783819/437591960874778645/cyborgtoast.png")
+        em.add_field(name=":one:", value="First login into the Hypixel Network with your Minecraft account.")
+        em.add_field(name=":two:", value="After successfuly logging in, right-click your player head.")
+        em.add_field(name=":three:", value="Click on Social Media.")
+        em.add_field(name=":four:", value="Left-click on Discord.", inline=False)
+        em.add_field(name=":five:", value="Paste your Discord tag in chat (don't worry no one will see it). And now you are all done!")
+        await ctx.send(embed=em)
+
+
+
+"""Defining this extension"""
+def setup(bot):
+    bot.add_cog(hypixel(bot))
