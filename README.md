@@ -96,6 +96,9 @@ This is a bot that has many features of a wide variety of natures. So, let's get
   
     *I'll post more detailed info when the feature is in a more advanced stage.
   
+  **Credits**
+  
+  I've developed almost all the features. The Hypixel API wrapper that I use for the Hypixel commands is so kindly provided by Snuggle (visit him [here][https://github.com/Snuggle]) and my exec command (which isn't fully working in this commit because I need to do some compatibility work) is made by the Espy, God himself (visit him and give him some love [here][https://github.com/neko404notfound/].
   
   
   So this are the current feaures of CyborgToast! Feel free to make any suggestions by DMing me @Tmpod#0836.
