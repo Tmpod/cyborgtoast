@@ -1,4 +1,6 @@
-# CyborgToast [InDev]
+# THIS REPO IS DEPRECATED! I'VE MOVED TO [GITLAB](https://gitlab.com/tmpod/cyborgtoast)
+
+## CyborgToast [InDev]
 
 This is a bot that has many features of a wide variety of natures. So, let's get right into the feature's list.
 
